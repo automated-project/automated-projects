@@ -638,6 +638,17 @@ def main():
     print(f"🚀 Master Video Pipeline Engine | Channel: {cfg['name']} ({channel_id.upper()}) | Mode: {args.mode}")
     print(f"📌 Executing Step: [{args.step.upper()}]")
     print("=" * 70)
+
+    # 🔒 【ローカルレンダリング完全絶対禁止ガード】
+    # GitHub Actions(Linux) 以外のローカルMac環境で動画レンダリング(cloud_actions以外の動画生成ステップ)が呼び出された場合、即座に例外で物理遮断
+    is_github_actions = os.getenv("GITHUB_ACTIONS") == "true" or os.getenv("CI") == "true"
+    if not is_github_actions and args.mode != "cloud_actions" and args.step in ["all", "video"]:
+        raise SystemError(
+            "\n❌ 【憲法違反: ローカル動画レンダリング絶対禁止ガード発動】\n"
+            "Macローカル環境でのFFmpeg動画レンダリングはプロジェクト憲法により物理的に固く禁止されています。\n"
+            "ローカル負荷を避けるため、動画生成は必ず GitHub Actions (クラウド環境) への git push か、\n"
+            "--mode cloud_actions オプション付きのクラウドワークフローで実行してください。"
+        )
     
     # 物理パス解決 (YouTube/shared/scripts/master_video_pipeline.py -> parent x 3 = YouTube/)
     youtube_base = Path(__file__).resolve().parent.parent.parent
