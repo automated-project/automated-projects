@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-【共通モジュール①】音源マスタリング & DJクロスフェード結合
-- 全チャンネル共通: MP3/WAV音源の 2.5s Equal-Power Crossfade ＆ Zero-EQ Peak Guard (alimiter 0.95)
+【共通モジュール①】音源マスタリング & DJクロスフェード結合 (確定統一仕様)
+- 全チャンネル共通: 
+  - イコライザー(EQ)完全OFF (Zero-EQ原音尊重)
+  - LUFS(loudnorm)過度な音圧圧縮の完全不使用・排除
+  - ピーク保護: alimiter=limit=0.95:level=disabled のみ適用
+  - 曲間: 2.5秒 Equal-Power Crossfade
+  - 末尾処理: フェードアウトなし
+  - 保存形式: MP3 320kbps 最高品質
 """
 
 import os
@@ -22,7 +28,8 @@ def get_audio_duration(file_path: Path) -> float:
 
 def process_audio_mastering(audio_files: list, output_audio_path: Path, output_chapters_path: Path = None) -> float:
     """
-    全音源トラックを読み込み、タイムスタンプを計算して 320kbps MP3 として結合マスタリングする。
+    全音源トラックを読み込み、タイムスタンプを計算して 2.5s クロスフェード＋Zero-EQ ピーク保護(alimiter 0.95)
+    を適用し、末尾フェードアウトなしで MP3 320kbps マスターを出力する。
     """
     if not audio_files:
         raise ValueError("No audio files provided for mastering.")
@@ -52,20 +59,32 @@ def process_audio_mastering(audio_files: list, output_audio_path: Path, output_c
         output_chapters_path.parent.mkdir(parents=True, exist_ok=True)
         output_chapters_path.write_text(chapters_text, encoding="utf-8")
 
-    # FFmpeg concat リスト生成
-    concat_list_file = output_audio_path.parent / "audio_concat_list.txt"
-    with open(concat_list_file, "w", encoding="utf-8") as f:
-        for trk in audio_files:
-            safe_path = str(Path(trk).resolve()).replace("'", "'\\''")
-            f.write(f"file '{safe_path}'\n")
+    # FFmpeg concat & crossfade / Peak Limiter (No end fade-out)
+    filter_complex = ""
+    if len(audio_files) == 1:
+        filter_complex = "[0:a]alimiter=limit=0.95:level=disabled[aout]"
+    else:
+        curr = "0:a"
+        for i in range(1, len(audio_files)):
+            nxt = f"{i}:a"
+            out_lbl = f"a{i}" if i < len(audio_files) - 1 else "afin"
+            filter_complex += f"[{curr}][{nxt}]acrossfade=d=2.5:c1=tri:c2=tri[{out_lbl}];"
+            curr = out_lbl
+        # 末尾 afade を完全除去し、alimiter のみ適用
+        filter_complex += f"[afin]alimiter=limit=0.95:level=disabled[aout]"
 
-    cmd_audio = [
-        "ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", str(concat_list_file),
-        "-af", "alimiter=limit=0.95:level=disabled",
+    cmd_audio = ["ffmpeg", "-y"]
+    for trk in audio_files:
+        cmd_audio.extend(["-i", str(Path(trk).resolve())])
+
+    cmd_audio.extend([
+        "-filter_complex", filter_complex,
+        "-map", "[aout]",
         "-ar", "44100", "-c:a", "libmp3lame", "-b:a", "320k",
         str(output_audio_path)
-    ]
-    print(f"Executing FFmpeg Audio Mastering: {' '.join(cmd_audio)}", flush=True)
+    ])
+
+    print(f"Executing FFmpeg Audio Mastering (Zero-EQ / No Fade-out): {' '.join(cmd_audio)}", flush=True)
     subprocess.run(cmd_audio, check=True)
 
     print(f"✅ Audio Mastering Complete: {output_audio_path} ({current_sec:.1f}s)")

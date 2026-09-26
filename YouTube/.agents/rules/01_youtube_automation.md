@@ -4,7 +4,7 @@ trigger: always_on
 
 # YouTube 自動化・制作・運用 統合マスター規約 (YouTube Automation Master Rules)
 
-本ファイルは、YouTube 3大音楽特化チャンネル体制における**音響マスタリング、モジュール構造、サムネイルデザイン、映像レンダリング、概要欄・タグの管理、API自動運用の手順および絶対禁止事項**を集約した最上位規約である。
+本ファイルは、YouTube 3大音楽特化チャンネル体制における**音響マスタリング、モジュール構造、サムネイルデザイン、映像レンダリング、波形ビジュアル演出、概要欄・タグの管理、API自動運用の確定仕様手順および絶対禁止事項**を集約した最上位規約である。
 
 ---
 
@@ -14,37 +14,58 @@ trigger: always_on
 
 ---
 
-## 1. 📂 新モジュール構造 ＆ データ・制御の分離設計
+## 1. 🎵 確定音響整音 ＆ シームレスDJクロスフェード規格 (`01_audio_master.py`)
 
-本プロジェクトは、機能別に分解された**単機能モジュール群**と、CLI引数でそれらをコントロールする**統括スクリプト**、および可変データを保持する**各チャンネルの `templates/`** で構成される。
+### ① 【確定原則】イコライザー（EQ）完全撤廃 & 原音尊重 (`Zero-EQ`)
+* **全チャンネルEQ完全OFF**: 原音バランスを100%活かすため、EQ（低音ブーストや高音強調）は一切適用しない。
+* **`loudnorm` の完全永久禁止**: 音質変化・不自然な音量ダイナミクスの揺れを防ぐため、過度なラウドネス圧縮 (`loudnorm`) は行わない（YouTube標準の自動調整に任せる）。
+* **ピーク保護のみ適用**: Peak Limiter (`alimiter=limit=0.95:level=disabled`) のみを適用して音割れを防止。
+
+### ② シームレスDJクロスフェード & 末尾処理仕様
+1. **2.5秒 等エネルギーDJクロスフェード (Equal-Power Crossfade)**: 前後曲を $\cos/\sin$ カーブで2.5秒オーバーラップさせ、音圧凹みを防ぎ接続。
+2. **動画末尾フェードアウトなし**: **動画全体の末尾フェードアウト (`afade`) は行わない**（音楽の自然な余韻を守る）。
+3. **MP3 320kbps 最高品質保存**: 中間音声およびマスター音声は MP3 320kbps（`libmp3lame`）で高速・高音質保存する。
+
+---
+
+## 2. 🎬 確定映像スペック ＆ 画面左下波形演出規格 (`03_video_render.py` / `visualizer_engine.py`)
+
+1. **画質スペック**: **`3840x2160 (4K UHD)`**, **`30 fps`**, **`9500 kbps`** (H.264 / AAC 320k)
+2. **画面左下 BPM同期波形演出 (Center-Mirrored 3-Bar Visualizer)**:
+   * **演出方式**: 3本の極細丸角スリムカプセルバー（幅: 8px, 隙間: 14px）が中心Y座標から上下対称に滑らかに伸び縮みする。
+   * **配置位置**: **【画面左下】** (`START_X = 150`, `CENTER_Y = 2050`) に全チャンネル共通配置。
+   * **テンポ同期**: 各チャンネルの平均BPM（Ch1: 68 BPM, Ch2: 102 BPM, Ch3: 128 BPM）に合わせたBPM同期ポリリズムモーション。
+
+---
+
+## 3. 📂 新モジュール構造 ＆ データ・制御の分離設計
 
 ```text
 YouTube/
 ├── shared/
 │   ├── credentials/                 # 認証トークン (token_gameverse.json 等)
 │   └── scripts/
-│       ├── 01_audio_master.py        # 【共通①】音源マスタリング & 2.5s DJ Crossfade (Zero-EQ)
+│       ├── 01_audio_master.py        # 【共通①】音源マスタリング & 2.5s DJ Crossfade (Zero-EQ / 末尾フェードなし)
 │       ├── 04_youtube_upload.py     # 【共通④】YouTube Data API 非公開投稿
+│       ├── visualizer_engine.py     # 【共通】画面左下 BPM同期波形描画エンジン
 │       └── run_pipeline.py          # 【統括】パイプラインオーケストレーター
 │
 └── [01_Chill_Channel | 02_Velvet_Sunset_Channel | 03_Uplifting_Channel]/
     ├── templates/
-    │   ├── config.json              # 動画タイトル、タグ、音源・画像参照パス、固有設定
+    │   ├── config.json              # 動画タイトル、タグ、音源・画像参照パス、確定スペック
     │   ├── description_template.txt # 概要欄テンプレート・ライセンス文
     │   └── prompts.md               # Imagen 3 プロンプト集・ビジュアルガイド
     └── scripts/
         ├── 02_thumbnail_gen.py      # 【固有②】サムネイル自動生成
-        └── 03_video_render.py       # 【固有③】4K H.264 ビデオレンダリング
+        └── 03_video_render.py       # 【固有③】画面左下波形組み込み 4K レンダリング
 ```
 
 ---
 
-## 2. 🚀 統括スクリプト (`run_pipeline.py`) の実行手順 ＆ CLI引数
-
-全工程の実行は統括スクリプト `run_pipeline.py` に指定チャンネルの `config.json` を渡して呼び出す。
+## 4. 🚀 統括スクリプト (`run_pipeline.py`) の実行手順
 
 ```bash
-# 基本実行 (指定チャンネルの templates/config.json を読み込み、全工程を実行)
+# 基本実行 (Ch2の全工程を実行)
 python YouTube/shared/scripts/run_pipeline.py --config YouTube/02_Velvet_Sunset_Channel/templates/config.json --step all
 
 # 特定ステップのみの個別実行 (--step audio / thumb / video / upload)
@@ -59,32 +80,9 @@ python YouTube/shared/scripts/run_pipeline.py --config YouTube/02_Velvet_Sunset_
 
 ---
 
-## 3. 🎵 音響整音 & シームレスDJクロスフェード規格 (Zero-EQ Natural Audio Pipeline)
-
-### ① 【確定原則】イコライザー（EQ）完全撤廃 & 原音尊重 (`01_audio_master.py`)
-* **全チャンネルEQ完全OFF**: 原音バランスを100%活かすため、EQ（低音ブーストや高音強調）は一切適用しない。
-* **`loudnorm` の完全永久禁止**: 音質変化・不自然なポンピングを防ぐため、過度なラウドネス圧縮は行わない。
-* **ピーク保護のみ適用**: Peak Limiter (`alimiter=limit=0.95:level=disabled`) のみを適用。
-
-### ② シームレスDJクロスフェード合成仕様
-1. **2.5秒 等エネルギーDJクロスフェード (Equal-Power Crossfade)**: 前後曲を $\cos/\sin$ カーブで2.5秒オーバーラップさせ、音圧凹みを防ぎ接続。
-2. **末尾フェードアウト**: 動画全体のラスト3秒で滑らかにフェードアウト（`afade`）。
-3. **MP3 320kbps 最高品質保存**: 中間音声およびマスター音声は MP3 320kbps（`libmp3lame`）で高速・高音質保存する。
-
----
-
-## 4. 📤 YouTube API 自動投稿 ＆ メタデータ規約 (`04_youtube_upload.py`)
-
-1. **非公開（private）投稿の徹底**: レンダリング完了後の投稿は、安全確認のため必ず **「非公開（private）」** 設定で投入する。
-2. **テンプレートファイルの自動置換**: 概要欄は `templates/description_template.txt` をロードし、計算されたタイムスタンプ文字列 `{chapters}` を自動挿入する。
-3. **タイトルへのメタ情報記述の完全禁止**: タイトルに「商用利用OK / Commercial Use OK / 1 Hour / 30 Min」等のメタ情報や時間表記は含めない（世界観最優先）。
-4. **ネイティブ検索フレーズ準拠**: 直訳や機械翻訳を避け、現地需要フレーズ（例: 韓国 `노동요`, ロシア `Музыка в машину` 等）を採用する。
-
----
-
 ## 5. ⛔ 絶対禁止事項 (No-Push & Prohibition Rules)
 
 * ❌ **【絶対禁止】リモートプッシュの自己判断実行 (`No-Push Rule`)**: 明示的な指示がない限り `git push` を自動実行しない。
 * ❌ **【絶対禁止】Macローカル環境でのFFmpeg動画エンコード**: ローカルMacのCPU/GPU負荷を避けるため、動画レンダリングはクラウド（GitHub Actions）で実行する。
-* ❌ **【絶対禁止】コード内への秘密鍵・トークンの直接ベタ書き**: APIキーやOAuthトークンは必ず `shared/credentials/` 配下のファイルを参照または GitHub Secrets から復元する。
-* ❌ **【絶対禁止】`loudnorm` フィルタの使用**: 過度な音圧圧縮を永久禁止。
+* ❌ **【絶対禁止】`loudnorm` フィルタおよび末尾 `afade` の使用**: 音質劣化・余韻切断を防ぐため絶対禁止。
+* ❌ **【絶対禁止】波形演出の画面右下・画面中央への無断配置**: 波形配置は必ず【画面左下 (`x=150, y=2050`)】に固定する。
