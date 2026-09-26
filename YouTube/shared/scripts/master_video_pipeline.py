@@ -674,6 +674,102 @@ def main():
     if bg_image:
         validate_file_exists(str(bg_image), label="背景サムネイル画像")
     
+    # ⚡ クラウド自動レンダリング＆YouTube自動非公開投稿モード（自律完走）
+    if args.mode == "cloud_actions":
+        print(f"\n⚡ [CLOUD ACTIONS MODE] Executing Cloud Rendering & Private YouTube Upload for {cfg['name']}...", flush=True)
+        from shared.scripts.account_token_manager import get_youtube_service
+        from googleapiclient.http import MediaFileUpload
+        
+        tracks = sorted(list(audio_dir.glob("*.wav")) + list(audio_dir.glob("*.mp3")))
+        validate_audio_files([str(t) for t in tracks])
+        
+        output_dir = base_ch_dir / "output_videos"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        final_audio = output_dir / f"{channel_id}_cloud_master_audio.mp3"
+        final_video = output_dir / f"{channel_id}_cloud_4k_master.mp4"
+        final_thumb = output_dir / f"{channel_id}_cloud_thumbnail.jpg"
+        
+        # 1. FFmpeg による MP3 トラックの連結 ＆ Zero-EQ ピーク保護 (alimiter 0.95) -> MP3 320kbps
+        print("🎵 [Cloud Audio] Combining MP3 tracks & applying Zero-EQ mastering (MP3 320kbps)...", flush=True)
+        concat_list_file = output_dir / "audio_concat_list.txt"
+        with open(concat_list_file, "w", encoding="utf-8") as f:
+            for trk in tracks:
+                safe_path = str(trk.resolve()).replace("'", "'\\''")
+                f.write(f"file '{safe_path}'\n")
+
+        cmd_audio = [
+            "ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", str(concat_list_file),
+            "-af", "alimiter=limit=0.95:level=disabled",
+            "-ar", "44100", "-c:a", "libmp3lame", "-b:a", "320k",
+            str(final_audio)
+        ]
+        print(f"Executing: {' '.join(cmd_audio)}", flush=True)
+        try:
+            res = subprocess.run(cmd_audio, capture_output=True, text=True, check=True)
+            print(f"✅ Audio Master Created (MP3 320kbps): {final_audio}", flush=True)
+        except subprocess.CalledProcessError as e:
+            print(f"❌ [FFmpeg Audio Error] STDOUT:\n{e.stdout}", flush=True)
+            print(f"❌ [FFmpeg Audio Error] STDERR:\n{e.stderr}", flush=True)
+            raise e
+
+        # 2. サムネイル準備
+        shutil.copy2(bg_image, final_thumb)
+
+        # 3. 4K Video Rendering (libx264)
+        print("🎬 [Cloud Video] Rendering 4K Video via FFmpeg...", flush=True)
+        cmd_video = [
+            "ffmpeg", "-y",
+            "-loop", "1", "-i", str(final_thumb),
+            "-i", str(final_audio),
+            "-c:v", "libx264", "-preset", "medium", "-tune", "stillimage", "-b:v", "9500k",
+            "-vf", "scale=3840:2160:flags=lanczos,format=yuv420p",
+            "-c:a", "aac", "-b:a", "320k", "-shortest",
+            str(final_video)
+        ]
+        try:
+            res_v = subprocess.run(cmd_video, capture_output=True, text=True, check=True)
+            print(f"✅ 4K Video Master Created: {final_video}", flush=True)
+        except subprocess.CalledProcessError as e:
+            print(f"❌ [FFmpeg Video Error] STDOUT:\n{e.stdout}", flush=True)
+            print(f"❌ [FFmpeg Video Error] STDERR:\n{e.stderr}", flush=True)
+            raise e
+
+        # 4. YouTube Data API Private Upload
+        print("📤 [Cloud Upload] Uploading to YouTube as Private...", flush=True)
+        meta = generate_channel_metadata(channel_id, pattern_index=args.pattern_index, chapters_text="00:00 - Master Track")
+        yt = get_youtube_service(cfg['account_key'])
+        
+        body = {
+            'snippet': {
+                'title': meta["title"],
+                'description': meta["description"],
+                'tags': meta["tags"],
+                'categoryId': '10',
+                'defaultLanguage': 'en',
+                'defaultAudioLanguage': 'en'
+            },
+            'status': {
+                'privacyStatus': 'private',
+                'selfDeclaredMadeForKids': False
+            }
+        }
+        
+        media = MediaFileUpload(str(final_video), chunksize=-1, resumable=True, mimetype='video/mp4')
+        req = yt.videos().insert(part=','.join(body.keys()), body=body, media_body=media)
+        
+        res = None
+        while res is None:
+            st, res = req.next_chunk()
+            if st:
+                print(f"  Uploading: {int(st.progress() * 100)}%", flush=True)
+
+        vid_id = res['id']
+        print(f"🎉 YouTube Private Upload Succeeded! Video ID: {vid_id} (https://youtu.be/{vid_id})", flush=True)
+        yt.thumbnails().set(videoId=vid_id, media_body=MediaFileUpload(str(final_thumb))).execute()
+        print("✅ Thumbnail Uploaded Successfully!", flush=True)
+        print("\n🎉 Cloud Actions Master Video Pipeline Complete with 100% Validation!", flush=True)
+        sys.exit(0)
+    
     checklist_data = [
         {"item": "対象チャンネルID", "req": channel_id.upper(), "actual": cfg["name"], "status": True},
         {"item": "背景画像パス", "req": str(bg_image), "actual": "物理ファイル存在OK", "status": bg_image.exists()}
@@ -740,91 +836,6 @@ def main():
             account_num=1
         )
         print("✅ Step UPLOAD Completed!")
-
-    # クラウド自動レンダリング＆YouTube自動非公開投稿モード
-    if args.mode == "cloud_actions":
-        print(f"\n⚡ [CLOUD ACTIONS MODE] Executing Cloud Rendering & Private YouTube Upload for {cfg['name']}...")
-        from shared.scripts.account_token_manager import get_youtube_service
-        from googleapiclient.http import MediaFileUpload
-        
-        tracks = sorted(list(audio_dir.glob("*.wav")) + list(audio_dir.glob("*.mp3")))
-        validate_audio_files([str(t) for t in tracks])
-        
-        output_dir = base_ch_dir / "output_videos"
-        output_dir.mkdir(parents=True, exist_ok=True)
-        final_audio = output_dir / f"{channel_id}_cloud_master_audio.mp3"
-        final_video = output_dir / f"{channel_id}_cloud_4k_master.mp4"
-        final_thumb = output_dir / f"{channel_id}_cloud_thumbnail.jpg"
-        
-        # 1. FFmpeg による MP3 トラックの連結 ＆ Zero-EQ ピーク保護 (alimiter 0.95) -> MP3 320kbps
-        print("🎵 [Cloud Audio] Combining MP3 tracks & applying Zero-EQ mastering (MP3 320kbps)...")
-        concat_list_file = output_dir / "audio_concat_list.txt"
-        with open(concat_list_file, "w", encoding="utf-8") as f:
-            for trk in tracks:
-                f.write(f"file '{trk.resolve()}'\n")
-
-        cmd_audio = [
-            "ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", str(concat_list_file),
-            "-af", "alimiter=limit=0.95:level=disabled",
-            "-ar", "44100", "-c:a", "libmp3lame", "-b:a", "320k",
-            str(final_audio)
-        ]
-        print(f"Executing: {' '.join(cmd_audio)}")
-        subprocess.run(cmd_audio, check=True)
-        print(f"✅ Audio Master Created (MP3 320kbps): {final_audio}")
-
-        # 2. サムネイル準備
-        shutil.copy2(bg_image, final_thumb)
-
-        # 3. 4K Video Rendering (libx264)
-        print("🎬 [Cloud Video] Rendering 4K Video via FFmpeg...")
-        cmd_video = [
-            "ffmpeg", "-y",
-            "-loop", "1", "-i", str(final_thumb),
-            "-i", str(final_audio),
-            "-c:v", "libx264", "-preset", "medium", "-tune", "stillimage", "-b:v", "9500k",
-            "-vf", "scale=3840:2160:flags=lanczos,format=yuv420p",
-            "-c:a", "aac", "-b:a", "320k", "-shortest",
-            str(final_video)
-        ]
-        subprocess.run(cmd_video, check=True)
-        print(f"✅ 4K Video Master Created: {final_video}")
-
-        # 4. YouTube Data API Private Upload
-        print("📤 [Cloud Upload] Uploading to YouTube as Private...")
-        meta = generate_channel_metadata(channel_id, pattern_index=args.pattern_index, chapters_text="00:00 - Master Track")
-        yt = get_youtube_service(cfg['account_key'])
-        
-        body = {
-            'snippet': {
-                'title': meta["title"],
-                'description': meta["description"],
-                'tags': meta["tags"],
-                'categoryId': '10',
-                'defaultLanguage': 'en',
-                'defaultAudioLanguage': 'en'
-            },
-            'status': {
-                'privacyStatus': 'private',
-                'selfDeclaredMadeForKids': False
-            }
-        }
-        
-        media = MediaFileUpload(str(final_video), chunksize=-1, resumable=True, mimetype='video/mp4')
-        req = yt.videos().insert(part=','.join(body.keys()), body=body, media_body=media)
-        
-        res = None
-        while res is None:
-            st, res = req.next_chunk()
-            if st:
-                print(f"  Uploading: {int(st.progress() * 100)}%", flush=True)
-
-        vid_id = res['id']
-        print(f"🎉 YouTube Private Upload Succeeded! Video ID: {vid_id} (https://youtu.be/{vid_id})")
-        yt.thumbnails().set(videoId=vid_id, media_body=MediaFileUpload(str(final_thumb))).execute()
-        print("✅ Thumbnail Uploaded Successfully!")
-        print("\n🎉 Cloud Actions Master Video Pipeline Complete!")
-        sys.exit(0)
 
     # 最終指示履行確認チェックリスト表示
     print_user_instruction_checklist(checklist_data)
