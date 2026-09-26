@@ -48,7 +48,7 @@ def get_auto_fit_font(text: str, font_path: str, font_index: int = 0, target_wid
 
     return best_font, best_size
 
-def generate_ch1_thumbnail(bg_image_path: Path, output_thumb_path: Path, text: str = "Haven Chill", font_variant: str = "typewriter") -> Path:
+def generate_ch1_thumbnail(bg_image_path: Path, output_thumb_path: Path, text: str = "Deep Focus", font_variant: str = "typewriter") -> Path:
     output_thumb_path.parent.mkdir(parents=True, exist_ok=True)
 
     base_bg = Image.open(bg_image_path).convert("RGBA").resize((1920, 1080), Image.Resampling.LANCZOS)
