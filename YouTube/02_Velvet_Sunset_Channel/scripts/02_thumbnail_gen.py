@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-【Ch2 固有モジュール②】Velvet Sunset Audio サムネイル生成エンジン (新デザイン確定規格)
+【Ch2 固有モジュール②】Velvet Sunset Audio サムネイル生成エンジン (動的Auto-Fit確定規格)
 - スタイル: シネマティック ＆ リュクス
 - フォント: Didot Bold または Bodoni 72 Bold
-- 文字組み: ALL CAPS + かなり広い文字間隔 (V  E  L  V  E  T    S  U  N  S  E  T)
+- 文字組み: ALL CAPS
 - カラー: 高級オフホワイト (#F4F4F2 / 244, 244, 242)
 - シャドウ: #000000, xy: (0,0), opacity: 50%, ぼかし: 文字高さと同等 (広範囲ソフトシャドウ)
-- 配置: 画面中央ジャスト (260px基準)
+- 配置: 画面中央ジャスト (文字長に応じた動的Auto-Fit: ターゲット幅 1480px / 画面幅の約77%)
 """
 
 import os
@@ -16,13 +16,43 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
 TEXT_COLOR = (244, 244, 242, 255)  # 高級オフホワイト #F4F4F2
+TARGET_WIDTH = 1480  # 画面幅1920pxに対し左右に適度な余白（約77%幅）を残すターゲットサイズ
+MAX_FONT_SIZE = 260
+MIN_FONT_SIZE = 120
 
-def generate_ch2_thumbnail(bg_image_path: Path, output_thumb_path: Path, font_variant: str = "didot") -> Path:
+def get_auto_fit_font(text: str, font_path: str, font_index: int = 1, target_width: int = TARGET_WIDTH, max_size: int = MAX_FONT_SIZE, min_size: int = MIN_FONT_SIZE):
+    """
+    指定テキストが target_width に収まるようフォントサイズを動的にスケール調整する
+    """
+    dummy = Image.new("RGBA", (1920, 1080), (0, 0, 0, 0))
+    d_draw = ImageDraw.Draw(dummy)
+    
+    best_font = None
+    best_size = max_size
+
+    for font_size in range(max_size, min_size - 1, -2):
+        try:
+            if font_path.endswith(".ttc"):
+                font = ImageFont.truetype(font_path, font_size, index=font_index)
+            else:
+                font = ImageFont.truetype(font_path, font_size)
+        except Exception:
+            font = ImageFont.load_default()
+
+        bbox = d_draw.textbbox((0, 0), text, font=font)
+        w = bbox[2] - bbox[0]
+        if w <= target_width or font_size == min_size:
+            best_font = font
+            best_size = font_size
+            break
+
+    return best_font, best_size
+
+def generate_ch2_thumbnail(bg_image_path: Path, output_thumb_path: Path, text: str = "VELVET SUNSET", font_variant: str = "didot") -> Path:
     output_thumb_path.parent.mkdir(parents=True, exist_ok=True)
 
     base_bg = Image.open(bg_image_path).convert("RGBA").resize((1920, 1080), Image.Resampling.LANCZOS)
     
-    font_size = 260
     if font_variant.lower() == "bodoni":
         font_path = "/System/Library/Fonts/Supplemental/Bodoni 72.ttc"
         font_index = 1
@@ -30,13 +60,7 @@ def generate_ch2_thumbnail(bg_image_path: Path, output_thumb_path: Path, font_va
         font_path = "/System/Library/Fonts/Supplemental/Didot.ttc"
         font_index = 1
 
-    try:
-        font_main = ImageFont.truetype(font_path, font_size, index=font_index)
-    except Exception:
-        font_path = "/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf"
-        font_main = ImageFont.truetype(font_path, font_size)
-
-    text = "VELVET SUNSET"
+    font_main, calculated_size = get_auto_fit_font(text, font_path, font_index, target_width=TARGET_WIDTH)
 
     dummy = Image.new("RGBA", (1920, 1080), (0, 0, 0, 0))
     d_draw = ImageDraw.Draw(dummy)
@@ -64,12 +88,12 @@ def generate_ch2_thumbnail(bg_image_path: Path, output_thumb_path: Path, font_va
     final_img = Image.alpha_composite(composed, txt_layer)
 
     final_img.convert("RGB").save(output_thumb_path, quality=95)
-    print(f"✅ Generated Ch2 Thumbnail ({font_variant}): {output_thumb_path.name}")
+    print(f"✅ Generated Ch2 Thumbnail ({font_variant}, Auto-Fit size={calculated_size}px, width={w}px): {output_thumb_path.name}")
     return output_thumb_path
 
 if __name__ == "__main__":
     bg = Path("/Users/base/Automated-Projects/YouTube/02_Velvet_Sunset_Channel/cover_art/Gemini_Generated_Image_cxs9rncxs9rncxs9.jpeg")
     out1 = Path("/Users/base/Automated-Projects/YouTube/02_Velvet_Sunset_Channel/cover_art/thumb_ch2_didot.jpg")
     out2 = Path("/Users/base/Automated-Projects/YouTube/02_Velvet_Sunset_Channel/cover_art/thumb_ch2_bodoni.jpg")
-    generate_ch2_thumbnail(bg, out1, "didot")
-    generate_ch2_thumbnail(bg, out2, "bodoni")
+    generate_ch2_thumbnail(bg, out1, "VELVET SUNSET", "didot")
+    generate_ch2_thumbnail(bg, out2, "VELVET SUNSET", "bodoni")
