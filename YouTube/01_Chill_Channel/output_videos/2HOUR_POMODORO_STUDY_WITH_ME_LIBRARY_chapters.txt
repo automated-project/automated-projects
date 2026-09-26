@@ -1,0 +1,8 @@
+00:00 - Session 1 (Focus 25 Min)
+25:00 - Break 1 (5 Min)
+30:00 - Session 2 (Focus 25 Min)
+55:00 - Break 2 (5 Min)
+1:00:00 - Session 3 (Focus 25 Min)
+1:25:00 - Break 3 (5 Min)
+1:30:00 - Session 4 (Focus 25 Min)
+1:55:00 - Break 4 (5 Min / Cooldown)

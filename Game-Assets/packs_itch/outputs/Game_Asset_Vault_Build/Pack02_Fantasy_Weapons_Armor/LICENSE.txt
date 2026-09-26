@@ -1,0 +1,34 @@
+================================================================================
+GAME ASSET LICENSE & TERMS OF USE
+================================================================================
+
+Thank you for downloading this game asset pack!
+
+--------------------------------------------------------------------------------
+【PERMITTED USES】
+--------------------------------------------------------------------------------
+1. Commercial & Non-Commercial Projects
+   - You can freely use these assets in commercial, indie, or free games.
+   
+2. Supported Platforms
+   - Steam, itch.io, App Store (iOS), Google Play (Android), Nintendo Switch, PlayStation, Xbox, PC, Web, etc.
+
+3. Modifications Allowed
+   - You may resize, crop, edit colors, add visual effects, or combine these assets with other artwork to fit your project.
+
+4. Credit is Optional
+   - Attribution/credit is appreciated but NOT required. You are welcome to use these assets without crediting the author.
+
+--------------------------------------------------------------------------------
+【PROHIBITED USES】
+--------------------------------------------------------------------------------
+1. Standalone Resale & Redistribution
+   - You may NOT resell, redistribute, or sublicense these assets as standalone stock files, sheets, or texture packs.
+2. Direct Extraction
+   - You may not distribute raw asset files in an unprotected, easily extractable form.
+3. NFT & Blockchain
+   - Using these assets for NFTs or blockchain tokens is strictly prohibited.
+
+================================================================================
+Produced by GameVerse Audio & Game Assets Studio
+================================================================================

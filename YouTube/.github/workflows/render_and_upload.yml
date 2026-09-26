@@ -1,0 +1,79 @@
+name: Render and Upload to YouTube (GitHub Actions)
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - '01_Chill_Channel/**'
+      - '02_Velvet_Sunset_Channel/**'
+      - '03_Uplifting_Channel/**'
+      - 'shared/**'
+      - '.github/workflows/**'
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: 'Target Channel (chill / velvet / uplifting)'
+        required: false
+        default: 'chill'
+
+jobs:
+  render-and-upload:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360 # 最大6時間まで許可（時間切れでの強制終了を防止）
+
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install FFmpeg & System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg fonts-freefont-ttf
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install google-api-python-client google-auth-oauthlib google-auth-httplib2 pillow pydub numpy librosa
+
+      - name: Restore YouTube Tokens from Secrets
+        env:
+          YOUTUBE_CLIENT_SECRET_BASE64: ${{ secrets.YOUTUBE_CLIENT_SECRET_BASE64 }}
+          YOUTUBE_TOKEN_CHILL_BASE64: ${{ secrets.YOUTUBE_TOKEN_CHILL_BASE64 }}
+          YOUTUBE_TOKEN_VELVET_BASE64: ${{ secrets.YOUTUBE_TOKEN_VELVET_BASE64 }}
+          YOUTUBE_TOKEN_UPLIFTING_BASE64: ${{ secrets.YOUTUBE_TOKEN_UPLIFTING_BASE64 }}
+        run: |
+          mkdir -p shared/credentials
+          if [ -n "$YOUTUBE_CLIENT_SECRET_BASE64" ]; then
+            echo "$YOUTUBE_CLIENT_SECRET_BASE64" | base64 -d > shared/credentials/client_secrets.json
+          fi
+          if [ -n "$YOUTUBE_TOKEN_CHILL_BASE64" ]; then
+            echo "$YOUTUBE_TOKEN_CHILL_BASE64" | base64 -d > shared/credentials/token_gameverse.json
+          fi
+          if [ -n "$YOUTUBE_TOKEN_VELVET_BASE64" ]; then
+            echo "$YOUTUBE_TOKEN_VELVET_BASE64" | base64 -d > shared/credentials/token_phonkforge.json
+          fi
+          if [ -n "$YOUTUBE_TOKEN_UPLIFTING_BASE64" ]; then
+            echo "$YOUTUBE_TOKEN_UPLIFTING_BASE64" | base64 -d > shared/credentials/token_auramelody.json
+          fi
+
+      - name: Execute Master Render & YouTube Upload Pipeline
+        env:
+          PYTHONUNBUFFERED: "1"
+        run: |
+          echo "Starting GitHub Actions Cloud Rendering Pipeline..."
+          python shared/scripts/master_video_pipeline.py --mode cloud_actions
+
+      - name: Clean Up Credentials and Temporary Videos
+        if: always()
+        run: |
+          rm -rf shared/credentials/*.json
+          rm -f *.mp4 *.wav

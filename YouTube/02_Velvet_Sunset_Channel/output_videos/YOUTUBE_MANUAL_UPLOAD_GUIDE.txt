@@ -1,0 +1,66 @@
+================================================================================
+🎬 YouTube 手動アップロード用 メタデータ・パッケージ (PhonkForge Audio)
+================================================================================
+
+【1. アップロードする動画ファイル】
+/Users/base/Automated-Projects/YouTube/02_Gym_Phonk_Channel/output_videos/1HOUR_SUPER_CRISP_GYM_PHONK_VOL1_OFFICIAL.mp4
+
+【2. サムネイル画像】
+（推奨・パターン1）:
+/Users/base/Automated-Projects/YouTube/02_Gym_Phonk_Channel/output_videos/thumbnails/THUMBNAIL_01_PRO_NEON_BADGE.jpg
+
+（シンプル版・パターン2）:
+/Users/base/Automated-Projects/YouTube/02_Gym_Phonk_Channel/output_videos/thumbnails/THUMBNAIL_03_CLEAN_BADGES.jpg
+
+--------------------------------------------------------------------------------
+【3. 動画タイトル (Title)】
+🔥 [1 HOUR] Heavy Gym Phonk & Drift Hardstyle EDM Mix 2026 | Super Crisp Non-Stop DJ Set
+
+--------------------------------------------------------------------------------
+【4. 概要欄 (Description) - そのままコピー＆ペースト】
+🔥 1 Hour Non-Stop Heavy Gym Phonk, Aggressive Drift Phonk & Hardstyle EDM Mix.
+Engineered with Super Crisp mastering for maximum energy, heavy deadlifts, PR sets, and high-speed night drives.
+
+⚡ Features:
+- Seamless Non-Stop Energy (Zero Silence Gap / DJ Crossfade)
+- Super Crisp Audio (Sub-Bass +8.5dB & Highs +9.0dB)
+
+⏱️ TRACKLIST & TIMESTAMPS:
+00:00 01. Storming The Gate
+02:54 02. Asphalt Bite
+05:54 03. Asphalt Fang
+08:46 04. Asphalt Reaper
+11:35 05. Asphalt Redline
+14:31 06. Asphalt Takedown
+17:31 07. Asphalt Teeth
+20:27 08. Asphalt Vise
+23:27 09. Blacktop Fury
+26:26 10. Concrete Pursuit
+29:26 11. Raw Aggressive Drive
+32:25 12. Crush The Bone
+35:18 13. Kingdom Of My Own
+38:03 14. Midnight Asphalt
+41:02 15. Midnight Asphalt Burn
+43:55 16. Midnight Redline
+46:49 17. Redline Impact
+49:47 18. Redline Pressure
+52:47 19. Redline Torque
+55:39 20. Savage Grip
+58:32 21. Tarmac Teeth
+61:30 22. The Iron Ascent
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚡ All tracks mastered in-house with Super Crisp high-fidelity sound.
+🔥 Subscribe to @PhonkForgeAudio for daily high-energy gym workout & drift mixes!
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+#WorkoutMusic #GymPhonk #DriftPhonk #Hardstyle #BassBoosted #BeastMode #PhonkForge #EDM #GymMusic
+
+--------------------------------------------------------------------------------
+【5. タグ (Tags)】
+gym phonk, drift phonk, phonk, 1 hour phonk, phonk mix, workout music, gym music, aggressive phonk, hardstyle, hardstyle phonk, gym motivation, phonk 2026, beast mode, super crisp audio, bass boosted, phonkforge
+
+--------------------------------------------------------------------------------
+【6. 固定コメント (Pinned Comment 案)】
+What track gave you the biggest PR energy today? Drop your favorite timestamp below! 👇🔥
+================================================================================

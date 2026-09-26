@@ -1,0 +1,31 @@
+# 1. Ignore everything by default
+*
+
+# 2. Allow directories so git can traverse
+!*/
+
+# 3. Explicitly ALLOW ONLY Text/Code Source Files
+!*.py
+!*.md
+!*.yml
+!*.yaml
+!*.txt
+!*.sh
+!*.gitignore
+!.github/**
+
+# 4. EXCLUDE all binary media, images, zips, weights, tokens, credentials
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.mp4
+*.wav
+*.mp3
+*.flac
+*.zip
+*.tar.gz
+*.ttf
+*.ttc
+*.log
+*.json
