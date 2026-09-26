@@ -95,5 +95,5 @@ if __name__ == "__main__":
     out1 = Path("/Users/base/Automated-Projects/YouTube/03_Uplifting_Channel/cover_art/thumb_ch3_avenir.jpg")
     out2 = Path("/Users/base/Automated-Projects/YouTube/03_Uplifting_Channel/cover_art/thumb_ch3_futura.jpg")
     if bg.exists():
-        generate_ch3_thumbnail(bg, out1, "AURAMELODY", "avenir")
-        generate_ch3_thumbnail(bg, out2, "AURAMELODY", "futura")
+        generate_ch3_thumbnail(bg, out1, "MORNING VIBES", "avenir")
+        generate_ch3_thumbnail(bg, out2, "MORNING VIBES", "futura")

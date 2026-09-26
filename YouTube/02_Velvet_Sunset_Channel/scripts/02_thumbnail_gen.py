@@ -95,5 +95,5 @@ if __name__ == "__main__":
     bg = Path("/Users/base/Automated-Projects/YouTube/02_Velvet_Sunset_Channel/cover_art/Gemini_Generated_Image_cxs9rncxs9rncxs9.jpeg")
     out1 = Path("/Users/base/Automated-Projects/YouTube/02_Velvet_Sunset_Channel/cover_art/thumb_ch2_didot.jpg")
     out2 = Path("/Users/base/Automated-Projects/YouTube/02_Velvet_Sunset_Channel/cover_art/thumb_ch2_bodoni.jpg")
-    generate_ch2_thumbnail(bg, out1, "VELVET SUNSET", "didot")
-    generate_ch2_thumbnail(bg, out2, "VELVET SUNSET", "bodoni")
+    generate_ch2_thumbnail(bg, out1, "SUNSET DRIVE", "didot")
+    generate_ch2_thumbnail(bg, out2, "SUNSET DRIVE", "bodoni")

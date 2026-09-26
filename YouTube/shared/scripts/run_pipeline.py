@@ -104,6 +104,15 @@ def main():
             full_description = desc_template.replace("{chapters}", chapters_text).replace("{video_title}", config["video_title"])
 
             localizations = config.get("localizations", None)
+            if localizations:
+                # 動的変数 ({chapters}, {video_title}) を各言語説明文内にも適用
+                formatted_locs = {}
+                for lang_code, loc_data in localizations.items():
+                    formatted_locs[lang_code] = {
+                        "title": loc_data.get("title", ""),
+                        "description": loc_data.get("description", "").replace("{chapters}", chapters_text).replace("{video_title}", config["video_title"])
+                    }
+                localizations = formatted_locs
 
             video_id = upload_video_to_youtube(
                 account_key=config["account_key"],
