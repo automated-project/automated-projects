@@ -9,6 +9,7 @@ on:
       - 'YouTube/02_Velvet_Sunset_Channel/**'
       - 'YouTube/shared/**'
       - '.github/workflows/**'
+      - 'requirements.txt'
   workflow_dispatch:
 
 jobs:
@@ -24,7 +25,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-          cache: 'pip'
 
       - name: Install FFmpeg & System Dependencies
         run: |
@@ -34,7 +34,7 @@ jobs:
       - name: Install Python Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install google-api-python-client google-auth-oauthlib google-auth-httplib2 pillow numpy pydub librosa
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
       - name: Restore YouTube Tokens from Secrets
         env:
