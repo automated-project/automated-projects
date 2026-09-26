@@ -17,7 +17,10 @@ import numpy as np
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
-sys.path.append("/Users/base/Automated-Projects/YouTube")
+YOUTUBE_ROOT_DIR = Path(__file__).resolve().parent.parent
+if str(YOUTUBE_ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(YOUTUBE_ROOT_DIR))
+
 from shared.scripts.visualizer_engine import MinimalPolyrhythmVisualizer
 
 # ==============================================================================
