@@ -756,27 +756,20 @@ def main():
         final_video = output_dir / f"{channel_id}_cloud_4k_master.mp4"
         final_thumb = output_dir / f"{channel_id}_cloud_thumbnail.jpg"
         
-        # 1. FFmpeg による 2.5s DJ Crossfade & Zero-EQ (alimiter 0.95) -> MP3 320kbps 出力
-        print("🎵 [Cloud Audio] Processing DJ Crossfade & Zero-EQ Mastering via FFmpeg (MP3 320kbps)...")
-        filter_complex = ""
-        if len(tracks) == 1:
-            filter_complex = "[0:a]afade=t=out:st=177:d=3,alimiter=limit=0.95:level=disabled[aout]"
-        else:
-            curr = "0:a"
-            for i in range(1, len(tracks)):
-                nxt = f"{i}:a"
-                out_lbl = f"a{i}" if i < len(tracks) - 1 else "afin"
-                filter_complex += f"[{curr}][{nxt}]acrossfade=d=2.5:c1=tri:c2=tri[{out_lbl}];"
-                curr = out_lbl
-            filter_complex += f"[afin]afade=t=out:st=3600:d=3,alimiter=limit=0.95:level=disabled[aout]"
+        # 1. FFmpeg による MP3 トラックの連結 ＆ Zero-EQ ピーク保護 (alimiter 0.95) -> MP3 320kbps
+        print("🎵 [Cloud Audio] Combining MP3 tracks & applying Zero-EQ mastering (MP3 320kbps)...")
+        concat_list_file = output_dir / "audio_concat_list.txt"
+        with open(concat_list_file, "w", encoding="utf-8") as f:
+            for trk in tracks:
+                f.write(f"file '{trk.resolve()}'\n")
 
-        cmd_audio = ["ffmpeg", "-y"]
-        for trk in tracks:
-            cmd_audio.extend(["-i", str(trk)])
-        cmd_audio.extend([
-            "-filter_complex", filter_complex,
-            "-map", "[aout]", "-ar", "44100", "-c:a", "libmp3lame", "-b:a", "320k", str(final_audio)
-        ])
+        cmd_audio = [
+            "ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", str(concat_list_file),
+            "-af", "alimiter=limit=0.95:level=disabled",
+            "-ar", "44100", "-c:a", "libmp3lame", "-b:a", "320k",
+            str(final_audio)
+        ]
+        print(f"Executing: {' '.join(cmd_audio)}")
         subprocess.run(cmd_audio, check=True)
         print(f"✅ Audio Master Created (MP3 320kbps): {final_audio}")
 
