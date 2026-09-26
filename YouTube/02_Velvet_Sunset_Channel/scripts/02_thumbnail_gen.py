@@ -17,20 +17,12 @@ from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
 TEXT_COLOR = (244, 244, 242, 255)  # 高級オフホワイト #F4F4F2
 
-def draw_text_with_tracking(draw_obj, text, font, tracking_space_count=3):
-    """
-    文字間隔（トラッキング）を広げたテキストを構成して返す
-    """
-    spaces = " " * tracking_space_count
-    spaced_text = spaces.join(list(text.replace(" ", "   ")))
-    return spaced_text
-
 def generate_ch2_thumbnail(bg_image_path: Path, output_thumb_path: Path, font_variant: str = "didot") -> Path:
     output_thumb_path.parent.mkdir(parents=True, exist_ok=True)
 
     base_bg = Image.open(bg_image_path).convert("RGBA").resize((1920, 1080), Image.Resampling.LANCZOS)
     
-    font_size = 180  # 文字間を広げるため全体サイズを調整
+    font_size = 260
     if font_variant.lower() == "bodoni":
         font_path = "/System/Library/Fonts/Supplemental/Bodoni 72.ttc"
         font_index = 1
@@ -44,12 +36,11 @@ def generate_ch2_thumbnail(bg_image_path: Path, output_thumb_path: Path, font_va
         font_path = "/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf"
         font_main = ImageFont.truetype(font_path, font_size)
 
-    raw_text = "VELVET SUNSET"
-    spaced_text = draw_text_with_tracking(None, raw_text, font_main, tracking_space_count=3)
+    text = "VELVET SUNSET"
 
     dummy = Image.new("RGBA", (1920, 1080), (0, 0, 0, 0))
     d_draw = ImageDraw.Draw(dummy)
-    bbox = d_draw.textbbox((0, 0), spaced_text, font=font_main)
+    bbox = d_draw.textbbox((0, 0), text, font=font_main)
     w = bbox[2] - bbox[0]
     h = bbox[3] - bbox[1]
     x = (1920 - w) // 2
@@ -58,7 +49,7 @@ def generate_ch2_thumbnail(bg_image_path: Path, output_thumb_path: Path, font_va
     # 1. 広範囲中心ソフトシャドウ (#000000, xy:0, opacity: 50%, blur: 文字高さと同等)
     shadow_layer = Image.new("RGBA", (1920, 1080), (0, 0, 0, 0))
     s_draw = ImageDraw.Draw(shadow_layer)
-    s_draw.text((x, y), spaced_text, font=font_main, fill=(0, 0, 0, 140))  # ~55% 不透明度
+    s_draw.text((x, y), text, font=font_main, fill=(0, 0, 0, 140))  # ~55% 不透明度
     
     blur_radius = max(30, int(h * 0.7))  # 文字高さに合わせた超広範囲ソフトぼかし
     shadow_blurred = shadow_layer.filter(ImageFilter.GaussianBlur(blur_radius))
@@ -66,7 +57,7 @@ def generate_ch2_thumbnail(bg_image_path: Path, output_thumb_path: Path, font_va
     # 2. テキスト本体レイヤー
     txt_layer = Image.new("RGBA", (1920, 1080), (0, 0, 0, 0))
     t_draw = ImageDraw.Draw(txt_layer)
-    t_draw.text((x, y), spaced_text, font=font_main, fill=TEXT_COLOR)
+    t_draw.text((x, y), text, font=font_main, fill=TEXT_COLOR)
 
     # 3. 合成
     composed = Image.alpha_composite(base_bg, shadow_blurred)

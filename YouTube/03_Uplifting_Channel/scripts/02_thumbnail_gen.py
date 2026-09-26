@@ -17,16 +17,12 @@ from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
 TEXT_COLOR = (244, 244, 242, 255)
 
-def draw_text_with_tracking(text, tracking_space_count=1):
-    spaces = " " * tracking_space_count
-    return spaces.join(list(text.replace(" ", "   ")))
-
 def generate_ch3_thumbnail(bg_image_path: Path, output_thumb_path: Path, font_variant: str = "avenir") -> Path:
     output_thumb_path.parent.mkdir(parents=True, exist_ok=True)
 
     base_bg = Image.open(bg_image_path).convert("RGBA").resize((1920, 1080), Image.Resampling.LANCZOS)
     
-    font_size = 200
+    font_size = 260
     if font_variant.lower() == "futura":
         font_path = "/System/Library/Fonts/Supplemental/Futura.ttc"
         font_index = 2  # Bold
@@ -40,12 +36,11 @@ def generate_ch3_thumbnail(bg_image_path: Path, output_thumb_path: Path, font_va
         font_path = "/System/Library/Fonts/Supplemental/Arial Bold.ttf"
         font_main = ImageFont.truetype(font_path, font_size)
 
-    raw_text = "AURAMELODY"
-    spaced_text = draw_text_with_tracking(raw_text, tracking_space_count=1)
+    text = "AURAMELODY"
 
     dummy = Image.new("RGBA", (1920, 1080), (0, 0, 0, 0))
     d_draw = ImageDraw.Draw(dummy)
-    bbox = d_draw.textbbox((0, 0), spaced_text, font=font_main)
+    bbox = d_draw.textbbox((0, 0), text, font=font_main)
     w = bbox[2] - bbox[0]
     h = bbox[3] - bbox[1]
     x = (1920 - w) // 2
@@ -54,7 +49,7 @@ def generate_ch3_thumbnail(bg_image_path: Path, output_thumb_path: Path, font_va
     # シャドウ
     shadow_layer = Image.new("RGBA", (1920, 1080), (0, 0, 0, 0))
     s_draw = ImageDraw.Draw(shadow_layer)
-    s_draw.text((x, y), spaced_text, font=font_main, fill=(0, 0, 0, 140))
+    s_draw.text((x, y), text, font=font_main, fill=(0, 0, 0, 140))
     
     blur_radius = max(30, int(h * 0.6))
     shadow_blurred = shadow_layer.filter(ImageFilter.GaussianBlur(blur_radius))
@@ -62,7 +57,7 @@ def generate_ch3_thumbnail(bg_image_path: Path, output_thumb_path: Path, font_va
     # テキスト本体
     txt_layer = Image.new("RGBA", (1920, 1080), (0, 0, 0, 0))
     t_draw = ImageDraw.Draw(txt_layer)
-    t_draw.text((x, y), spaced_text, font=font_main, fill=TEXT_COLOR)
+    t_draw.text((x, y), text, font=font_main, fill=TEXT_COLOR)
 
     composed = Image.alpha_composite(base_bg, shadow_blurred)
     final_img = Image.alpha_composite(composed, txt_layer)
