@@ -1,4 +1,4 @@
-name: Render and Upload to YouTube (Master Pipeline)
+name: Render and Upload to YouTube (Modular Master Pipeline)
 
 on:
   push:
@@ -67,12 +67,12 @@ jobs:
                       print(f'⚠️ Failed restoring {filename}: {e}')
           "
 
-      - name: Execute Master Video Pipeline (Ch2 Cloud Render & YouTube Upload)
+      - name: Execute Modular Master Pipeline (Ch2 Cloud Render & YouTube Upload)
         env:
           PYTHONUNBUFFERED: "1"
           PYTHONPATH: "${{ github.workspace }}/YouTube:${{ github.workspace }}"
         run: |
-          python YouTube/shared/scripts/master_video_pipeline.py --channel ch2 --step all --mode cloud_actions
+          python YouTube/shared/scripts/run_pipeline.py --config YouTube/02_Velvet_Sunset_Channel/templates/config.json --step all --cloud
 
       - name: Clean Up Temporary Credentials
         if: always()
