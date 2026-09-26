@@ -36,26 +36,36 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-      - name: Restore YouTube Tokens from Secrets
+      - name: Restore YouTube Tokens from Secrets (Robust Python Decoder)
         env:
           YOUTUBE_CLIENT_SECRET_BASE64: ${{ secrets.YOUTUBE_CLIENT_SECRET_BASE64 }}
           YOUTUBE_TOKEN_CHILL_BASE64: ${{ secrets.YOUTUBE_TOKEN_CHILL_BASE64 }}
           YOUTUBE_TOKEN_VELVET_BASE64: ${{ secrets.YOUTUBE_TOKEN_VELVET_BASE64 }}
           YOUTUBE_TOKEN_UPLIFTING_BASE64: ${{ secrets.YOUTUBE_TOKEN_UPLIFTING_BASE64 }}
         run: |
-          mkdir -p YouTube/shared/credentials
-          if [ -n "$YOUTUBE_CLIENT_SECRET_BASE64" ]; then
-            echo "$YOUTUBE_CLIENT_SECRET_BASE64" | base64 -d > YouTube/shared/credentials/client_secrets.json
-          fi
-          if [ -n "$YOUTUBE_TOKEN_CHILL_BASE64" ]; then
-            echo "$YOUTUBE_TOKEN_CHILL_BASE64" | base64 -d > YouTube/shared/credentials/token_gameverse.json
-          fi
-          if [ -n "$YOUTUBE_TOKEN_VELVET_BASE64" ]; then
-            echo "$YOUTUBE_TOKEN_VELVET_BASE64" | base64 -d > YouTube/shared/credentials/token_phonkforge.json
-          fi
-          if [ -n "$YOUTUBE_TOKEN_UPLIFTING_BASE64" ]; then
-            echo "$YOUTUBE_TOKEN_UPLIFTING_BASE64" | base64 -d > YouTube/shared/credentials/token_auramelody.json
-          fi
+          python -c "
+          import os, base64, pathlib
+          cred_dir = pathlib.Path('YouTube/shared/credentials')
+          cred_dir.mkdir(parents=True, exist_ok=True)
+          
+          mapping = {
+              'YOUTUBE_CLIENT_SECRET_BASE64': 'client_secrets.json',
+              'YOUTUBE_TOKEN_CHILL_BASE64': 'token_gameverse.json',
+              'YOUTUBE_TOKEN_VELVET_BASE64': 'token_phonkforge.json',
+              'YOUTUBE_TOKEN_UPLIFTING_BASE64': 'token_auramelody.json'
+          }
+          
+          for env_key, filename in mapping.items():
+              val = os.getenv(env_key, '').strip()
+              if val:
+                  try:
+                      decoded = base64.b64decode(val).decode('utf-8')
+                      target = cred_dir / filename
+                      target.write_text(decoded, encoding='utf-8')
+                      print(f'✅ Restored {filename}')
+                  except Exception as e:
+                      print(f'⚠️ Failed restoring {filename}: {e}')
+          "
 
       - name: Execute Master Video Pipeline (Ch2 Cloud Render & YouTube Upload)
         env:
