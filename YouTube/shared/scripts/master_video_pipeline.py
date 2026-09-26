@@ -752,12 +752,12 @@ def main():
         
         output_dir = base_ch_dir / "output_videos"
         output_dir.mkdir(parents=True, exist_ok=True)
-        final_audio = output_dir / f"{channel_id}_cloud_master_audio.wav"
+        final_audio = output_dir / f"{channel_id}_cloud_master_audio.mp3"
         final_video = output_dir / f"{channel_id}_cloud_4k_master.mp4"
         final_thumb = output_dir / f"{channel_id}_cloud_thumbnail.jpg"
         
-        # 1. FFmpeg による 2.5s DJ Crossfade & Zero-EQ (alimiter 0.95)
-        print("🎵 [Cloud Audio] Processing DJ Crossfade & Zero-EQ Mastering via FFmpeg...")
+        # 1. FFmpeg による 2.5s DJ Crossfade & Zero-EQ (alimiter 0.95) -> MP3 320kbps 出力
+        print("🎵 [Cloud Audio] Processing DJ Crossfade & Zero-EQ Mastering via FFmpeg (MP3 320kbps)...")
         filter_complex = ""
         if len(tracks) == 1:
             filter_complex = "[0:a]afade=t=out:st=177:d=3,alimiter=limit=0.95:level=disabled[aout]"
@@ -775,10 +775,10 @@ def main():
             cmd_audio.extend(["-i", str(trk)])
         cmd_audio.extend([
             "-filter_complex", filter_complex,
-            "-map", "[aout]", "-ar", "44100", "-c:a", "pcm_s16le", str(final_audio)
+            "-map", "[aout]", "-ar", "44100", "-c:a", "libmp3lame", "-b:a", "320k", str(final_audio)
         ])
         subprocess.run(cmd_audio, check=True)
-        print(f"✅ Audio Master Created: {final_audio}")
+        print(f"✅ Audio Master Created (MP3 320kbps): {final_audio}")
 
         # 2. サムネイル準備
         shutil.copy2(bg_image, final_thumb)
