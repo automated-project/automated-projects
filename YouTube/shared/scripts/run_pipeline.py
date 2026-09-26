@@ -101,7 +101,9 @@ def main():
         else:
             chapters_text = chapters_file.read_text(encoding="utf-8") if chapters_file.exists() else ""
             desc_template = desc_template_path.read_text(encoding="utf-8") if desc_template_path.exists() else ""
-            full_description = desc_template.replace("{chapters}", chapters_text)
+            full_description = desc_template.replace("{chapters}", chapters_text).replace("{video_title}", config["video_title"])
+
+            localizations = config.get("localizations", None)
 
             video_id = upload_video_to_youtube(
                 account_key=config["account_key"],
@@ -110,6 +112,8 @@ def main():
                 title=config["video_title"],
                 description=full_description,
                 tags=config["tags"],
+                localizations=localizations,
+                chapters_text=chapters_text,
                 privacy_status="private"
             )
 
