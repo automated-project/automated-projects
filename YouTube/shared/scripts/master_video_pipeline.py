@@ -617,7 +617,8 @@ def main():
     import argparse
     parser = argparse.ArgumentParser(description="Automated-Projects YouTube Master Video Pipeline")
     parser.add_argument("--channel", type=str, required=True, choices=["ch1", "ch2", "ch3"], help="Target channel ID")
-    parser.add_argument("--step", type=str, default="all", choices=["all", "audio", "package", "upload"], help="Pipeline step to execute")
+    parser.add_argument("--step", type=str, default="all", choices=["all", "audio", "package", "upload", "cloud"], help="Pipeline step to execute")
+    parser.add_argument("--mode", type=str, default="local", help="Mode: local or cloud_actions")
     parser.add_argument("--audio-dir", type=str, default=None, help="Directory containing raw audio files")
     parser.add_argument("--bg-image", type=str, default=None, help="Path to 4K background cover art")
     parser.add_argument("--pattern-index", type=int, default=0, help="Metadata pattern index for titles/descriptions")
@@ -631,15 +632,33 @@ def main():
         sys.exit(1)
         
     print("=" * 70)
-    print(f"🚀 Master Video Pipeline Engine | Channel: {cfg['name']} ({channel_id.upper()})")
+    print(f"🚀 Master Video Pipeline Engine | Channel: {cfg['name']} ({channel_id.upper()}) | Mode: {args.mode}")
     print(f"📌 Executing Step: [{args.step.upper()}]")
     print("=" * 70)
     
     # 物理パス解決
-    base_ch_dir = Path(f"/Users/base/Automated-Projects/YouTube/{'01_Chill_Channel' if channel_id=='ch1' else '02_Velvet_Sunset_Channel' if channel_id=='ch2' else '03_Uplifting_Channel'}")
+    youtube_base = Path(__file__).resolve().parent.parent
+    ch_folder = '01_Chill_Channel' if channel_id=='ch1' else '02_Velvet_Sunset_Channel' if channel_id=='ch2' else '03_Uplifting_Channel'
+    base_ch_dir = youtube_base / ch_folder
     
-    audio_dir = Path(args.audio_dir) if args.audio_dir else base_ch_dir / "raw_audio" / ("ch2-drive-mix" if channel_id=="ch2" else "raw")
-    bg_image = Path(args.bg_image) if args.bg_image else (list((base_ch_dir / "cover_art").glob("*.jpeg")) + list((base_ch_dir / "cover_art").glob("*.jpg")))[0]
+    if args.audio_dir:
+        audio_dir = Path(args.audio_dir)
+    else:
+        if channel_id == "ch2" and (base_ch_dir / "raw_audio" / "ch2_drive_mp3").exists():
+            audio_dir = base_ch_dir / "raw_audio" / "ch2_drive_mp3"
+        else:
+            audio_dir = base_ch_dir / "raw_audio"
+            
+    if args.bg_image:
+        bg_image = Path(args.bg_image)
+    else:
+        target_thumb = base_ch_dir / "cover_art" / "thumb_03_golden_hour.jpg"
+        if target_thumb.exists():
+            bg_image = target_thumb
+        else:
+            found_art = list((base_ch_dir / "cover_art").glob("*.jpg")) + list((base_ch_dir / "cover_art").glob("*.jpeg"))
+            bg_image = found_art[0] if found_art else (base_ch_dir / "cover_art" / "thumb.jpg")
+
     out_pkg_dir = base_ch_dir / "colab_render_package"
     
     # 【自動バリデーションガード】事前チェック

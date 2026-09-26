@@ -4,7 +4,7 @@
 # 2. Allow directories so git can traverse
 !*/
 
-# 3. Explicitly ALLOW ONLY Text/Code Source Files
+# 3. Explicitly ALLOW ONLY Text/Code Source Files & Ch2 Audio
 !*.py
 !*.md
 !*.yml
@@ -13,15 +13,14 @@
 !*.sh
 !*.gitignore
 !.github/**
+!YouTube/02_Velvet_Sunset_Channel/raw_audio/ch2_drive_mp3/*.mp3
+!YouTube/02_Velvet_Sunset_Channel/cover_art/thumb_03_golden_hour.jpg
 
-# 4. EXCLUDE all binary media, images, zips, weights, tokens, credentials
+# 4. EXCLUDE all other binary media, images, zips, weights, tokens, credentials
 *.png
-*.jpg
-*.jpeg
 *.webp
 *.mp4
 *.wav
-*.mp3
 *.flac
 *.zip
 *.tar.gz
