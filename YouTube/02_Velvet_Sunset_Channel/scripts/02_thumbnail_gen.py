@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-【Ch2 固有モジュール②】Velvet Sunset Audio サムネイル生成エンジン
-- SignPainter 260px Glow 中央配置（サブタイトル完全排除）規格
+【Ch2 固有モジュール②】Velvet Sunset Audio サムネイル生成エンジン (新デザイン確定規格)
+- スタイル: シネマティック ＆ リュクス
+- フォント: Didot Bold または Bodoni 72 Bold
+- 文字組み: ALL CAPS + かなり広い文字間隔 (V  E  L  V  E  T    S  U  N  S  E  T)
+- カラー: 高級オフホワイト (#F4F4F2 / 244, 244, 242)
+- シャドウ: #000000, xy: (0,0), opacity: 50%, ぼかし: 文字高さと同等 (広範囲ソフトシャドウ)
+- 配置: 画面中央ジャスト (260px基準)
 """
 
 import os
@@ -10,49 +15,70 @@ import sys
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
-def generate_ch2_thumbnail(bg_image_path: Path, output_thumb_path: Path, spec: dict) -> Path:
+TEXT_COLOR = (244, 244, 242, 255)  # 高級オフホワイト #F4F4F2
+
+def draw_text_with_tracking(draw_obj, text, font, tracking_space_count=3):
+    """
+    文字間隔（トラッキング）を広げたテキストを構成して返す
+    """
+    spaces = " " * tracking_space_count
+    spaced_text = spaces.join(list(text.replace(" ", "   ")))
+    return spaced_text
+
+def generate_ch2_thumbnail(bg_image_path: Path, output_thumb_path: Path, font_variant: str = "didot") -> Path:
     output_thumb_path.parent.mkdir(parents=True, exist_ok=True)
 
     base_bg = Image.open(bg_image_path).convert("RGBA").resize((1920, 1080), Image.Resampling.LANCZOS)
     
-    font_path = spec.get("font_path", "/System/Library/Fonts/Supplemental/SignPainter.ttc")
-    font_size = spec.get("font_size_main", 260)
-    font_index = spec.get("font_index", 0)
-    glow_color = tuple(spec.get("glow_color", [255, 140, 50]))
-    text_color = tuple(spec.get("text_color", [255, 255, 255]))
+    font_size = 180  # 文字間を広げるため全体サイズを調整
+    if font_variant.lower() == "bodoni":
+        font_path = "/System/Library/Fonts/Supplemental/Bodoni 72.ttc"
+        font_index = 1
+    else:
+        font_path = "/System/Library/Fonts/Supplemental/Didot.ttc"
+        font_index = 1
 
     try:
         font_main = ImageFont.truetype(font_path, font_size, index=font_index)
     except Exception:
-        font_main = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial.ttf", 150)
+        font_path = "/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf"
+        font_main = ImageFont.truetype(font_path, font_size)
 
-    # テキスト設定（Ch2 は Velvet Sunset 表示）
-    main_text = "Velvet Sunset"
+    raw_text = "VELVET SUNSET"
+    spaced_text = draw_text_with_tracking(None, raw_text, font_main, tracking_space_count=3)
 
     dummy = Image.new("RGBA", (1920, 1080), (0, 0, 0, 0))
     d_draw = ImageDraw.Draw(dummy)
-    bbox = d_draw.textbbox((0, 0), main_text, font=font_main)
+    bbox = d_draw.textbbox((0, 0), spaced_text, font=font_main)
     w = bbox[2] - bbox[0]
     h = bbox[3] - bbox[1]
     x = (1920 - w) // 2
     y = (1080 - h) // 2 - 20
 
-    glow = Image.new("RGBA", (1920, 1080), (0, 0, 0, 0))
-    g_draw = ImageDraw.Draw(glow)
-    g_draw.text((x + 8, y + 10), main_text, font=font_main, fill=(0, 0, 0, 245))
-    g_draw.text((x, y), main_text, font=font_main, fill=(*glow_color, 230))
-    glow_blurred = glow.filter(ImageFilter.GaussianBlur(18))
+    # 1. 広範囲中心ソフトシャドウ (#000000, xy:0, opacity: 50%, blur: 文字高さと同等)
+    shadow_layer = Image.new("RGBA", (1920, 1080), (0, 0, 0, 0))
+    s_draw = ImageDraw.Draw(shadow_layer)
+    s_draw.text((x, y), spaced_text, font=font_main, fill=(0, 0, 0, 140))  # ~55% 不透明度
+    
+    blur_radius = max(30, int(h * 0.7))  # 文字高さに合わせた超広範囲ソフトぼかし
+    shadow_blurred = shadow_layer.filter(ImageFilter.GaussianBlur(blur_radius))
 
-    composed = Image.alpha_composite(base_bg, glow_blurred)
-
+    # 2. テキスト本体レイヤー
     txt_layer = Image.new("RGBA", (1920, 1080), (0, 0, 0, 0))
     t_draw = ImageDraw.Draw(txt_layer)
-    t_draw.text((x, y), main_text, font=font_main, fill=(*text_color, 255))
+    t_draw.text((x, y), spaced_text, font=font_main, fill=TEXT_COLOR)
+
+    # 3. 合成
+    composed = Image.alpha_composite(base_bg, shadow_blurred)
     final_img = Image.alpha_composite(composed, txt_layer)
 
     final_img.convert("RGB").save(output_thumb_path, quality=95)
-    print(f"✅ Generated Ch2 Thumbnail: {output_thumb_path}")
+    print(f"✅ Generated Ch2 Thumbnail ({font_variant}): {output_thumb_path.name}")
     return output_thumb_path
 
 if __name__ == "__main__":
-    print("Ch2 Thumbnail Generator Standalone Mode")
+    bg = Path("/Users/base/Automated-Projects/YouTube/02_Velvet_Sunset_Channel/cover_art/Gemini_Generated_Image_cxs9rncxs9rncxs9.jpeg")
+    out1 = Path("/Users/base/Automated-Projects/YouTube/02_Velvet_Sunset_Channel/cover_art/thumb_ch2_didot.jpg")
+    out2 = Path("/Users/base/Automated-Projects/YouTube/02_Velvet_Sunset_Channel/cover_art/thumb_ch2_bodoni.jpg")
+    generate_ch2_thumbnail(bg, out1, "didot")
+    generate_ch2_thumbnail(bg, out2, "bodoni")
