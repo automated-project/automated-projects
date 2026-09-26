@@ -70,6 +70,7 @@ jobs:
       - name: Execute Master Video Pipeline (Ch2 Cloud Render & YouTube Upload)
         env:
           PYTHONUNBUFFERED: "1"
+          PYTHONPATH: "${{ github.workspace }}/YouTube:${{ github.workspace }}"
         run: |
           python YouTube/shared/scripts/master_video_pipeline.py --channel ch2 --step all --mode cloud_actions
 
