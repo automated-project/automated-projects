@@ -56,6 +56,35 @@ def add_pinned_comment(yt, video_id: str, chapters_text: str):
     except Exception as e:
         print(f"⚠️ Warning: Failed to post top-level comment: {e}")
 
+def check_title_duplicate_via_api(yt, proposed_title: str) -> bool:
+    """
+    YouTube Data API を経由して自分のチャンネルの既投稿動画（公開・非公開問わず）のタイトルを取得し、
+    提案されたタイトルが過去動画と被っていないか自動バリデーションする。
+    重複がある場合は True を返し、例外をスローして処理を自動停止させる。
+    """
+    print(f"🔍 Checking title duplication via YouTube Data API: '{proposed_title}'...")
+    try:
+        # 自分のチャンネルの動画一覧を取得 (mine=True)
+        request = yt.search().list(
+            part="snippet",
+            forMine=True,
+            type="video",
+            maxResults=50
+        )
+        response = request.execute()
+        
+        existing_titles = [item['snippet']['title'].strip().lower() for item in response.get('items', [])]
+        target_title = proposed_title.strip().lower()
+
+        if target_title in existing_titles:
+            print(f"❌ [DUPLICATE TITLE DETECTED] Title '{proposed_title}' already exists in channel videos!")
+            return True
+        print(f"✅ Title duplication check passed (Checked {len(existing_titles)} uploaded videos).")
+        return False
+    except Exception as e:
+        print(f"⚠️ Title duplicate API check warning: {e}. Proceeding with upload validation.")
+        return False
+
 def upload_video_to_youtube(
     account_key: str,
     video_path: Path,
@@ -76,8 +105,13 @@ def upload_video_to_youtube(
     if not thumbnail_path.exists():
         raise FileNotFoundError(f"Thumbnail file not found: {thumbnail_path}")
 
-    print(f"📤 Uploading video to YouTube ({account_key})...")
     yt = get_youtube_service(account_key)
+
+    # 🔒 タイトル重複 API 自動検証ガード
+    if check_title_duplicate_via_api(yt, title):
+        raise ValueError(f"❌ 動画タイトル '{title}' は過去に投稿された動画と完全に重複しています。ユニークなタイトルに変更してください。")
+
+    print(f"📤 Uploading video to YouTube ({account_key})...")
 
     snippet_data = {
         'title': title,
