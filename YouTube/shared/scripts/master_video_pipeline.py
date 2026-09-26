@@ -639,8 +639,8 @@ def main():
     print(f"📌 Executing Step: [{args.step.upper()}]")
     print("=" * 70)
     
-    # 物理パス解決
-    youtube_base = Path(__file__).resolve().parent.parent
+    # 物理パス解決 (YouTube/shared/scripts/master_video_pipeline.py -> parent x 3 = YouTube/)
+    youtube_base = Path(__file__).resolve().parent.parent.parent
     ch_folder = '01_Chill_Channel' if channel_id=='ch1' else '02_Velvet_Sunset_Channel' if channel_id=='ch2' else '03_Uplifting_Channel'
     base_ch_dir = youtube_base / ch_folder
     
