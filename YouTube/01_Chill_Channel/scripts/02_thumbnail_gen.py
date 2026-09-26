@@ -93,5 +93,7 @@ def generate_ch1_thumbnail(bg_image_path: Path, output_thumb_path: Path, text: s
 
 if __name__ == "__main__":
     bg = Path("/Users/base/Automated-Projects/YouTube/01_Chill_Channel/cover_art/Bioluminescent_jellyfish_study.jpeg")
-    out = Path("/Users/base/Automated-Projects/YouTube/01_Chill_Channel/cover_art/thumb_ch1_typewriter.jpg")
-    generate_ch1_thumbnail(bg, out, "Haven Chill", "typewriter")
+    out_main = Path("/Users/base/Automated-Projects/YouTube/01_Chill_Channel/cover_art/thumb_ch1_typewriter.jpg")
+    out_sub = Path("/Users/base/Automated-Projects/YouTube/01_Chill_Channel/cover_art/thumb_ch1_courier.jpg")
+    generate_ch1_thumbnail(bg, out_main, "Haven Chill", "typewriter")
+    generate_ch1_thumbnail(bg, out_sub, "Haven Chill", "courier")
